@@ -10,8 +10,15 @@ import (
 	"github.com/updatecli/updatecli/pkg/core/result"
 )
 
+type pullRequestDetails struct {
+	Number      int
+	Title       string
+	Description string
+	Link        string
+}
+
 // isPullRequestExist queries a remote Bitbucket instance to know if a pullrequest already exists.
-func (s *Stash) isPullRequestExist() (title, description, link string, err error) {
+func (s *Stash) isPullRequestExist() (exists bool, details pullRequestDetails, err error) {
 	ctx := context.Background()
 	// Timeout api query after 30sec
 	ctx, cancelList := context.WithTimeout(ctx, 30*time.Second)
@@ -28,13 +35,13 @@ func (s *Stash) isPullRequestExist() (title, description, link string, err error
 		ctx,
 		strings.Join([]string{
 			s.Owner,
-			s.Repository}, "/"),
+			s.Repository,
+		}, "/"),
 		optsSearch,
 	)
-
 	if err != nil {
 		logrus.Debugf("RC: %d\nBody:\n%s", resp.Status, resp.Body)
-		return "", "", "", err
+		return false, pullRequestDetails{}, err
 	}
 
 	if resp.Status > 400 {
@@ -47,19 +54,23 @@ func (s *Stash) isPullRequestExist() (title, description, link string, err error
 			!p.Closed &&
 			!p.Merged {
 
-			logrus.Infof("%s Nothing else to do, our pullrequest already exist on:\n\t%s",
+			logrus.Infof("%s Pullrequest detected at:\n\t%s",
 				result.SUCCESS,
 				p.Link)
 
-			return p.Title, p.Body, p.Link, nil
+			return true, pullRequestDetails{
+				Number:      p.Number,
+				Title:       p.Title,
+				Description: p.Body,
+				Link:        p.Link,
+			}, nil
 		}
 	}
-	return "", "", "", nil
+	return false, pullRequestDetails{}, nil
 }
 
 // isRemoteBranchesExist queries a remote Bitbucket instance to know if both the pull-request source branch and the target branch exist.
 func (s *Stash) isRemoteBranchesExist() (bool, error) {
-
 	var sourceBranch string
 	var targetBranch string
 	var owner string
@@ -101,7 +112,6 @@ func (s *Stash) isRemoteBranchesExist() (bool, error) {
 			Size: 30,
 		},
 	)
-
 	if err != nil {
 		logrus.Debugf("RC: %d\nBody:\n%s", resp.Status, resp.Body)
 		return false, err
@@ -146,7 +156,6 @@ func (s *Stash) isRemoteBranchesExist() (bool, error) {
 
 // inheritFromScm retrieve missing bitbucket settings from the bitbucket scm object.
 func (s *Stash) inheritFromScm() {
-
 	if s.scm != nil {
 		_, s.SourceBranch, s.TargetBranch = s.scm.GetBranches()
 		s.Owner = s.scm.Spec.Owner

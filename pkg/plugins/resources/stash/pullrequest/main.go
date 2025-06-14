@@ -1,6 +1,7 @@
 package pullrequest
 
 import (
+	"github.com/drone/go-scm/scm"
 	"github.com/mitchellh/mapstructure"
 	"github.com/updatecli/updatecli/pkg/plugins/resources/stash/client"
 	stashscm "github.com/updatecli/updatecli/pkg/plugins/scms/stash"
@@ -29,7 +30,7 @@ type Stash struct {
 	// spec contains inputs coming from updatecli configuration
 	spec Spec
 	// client handle the api authentication
-	client client.Client
+	client *scm.Client
 	// scm allows to interact with a scm object
 	scm *stashscm.Stash
 	// SourceBranch specifies the pullrequest source branch.

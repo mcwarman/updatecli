@@ -7,18 +7,17 @@ import (
 
 // CheckActionExist verifies if an existing Stash pullrequest is already opened.
 func (s *Stash) CheckActionExist(report *reports.Action) error {
-
-	pullrequestTitle, pullrequestDescription, pullrequestLink, err := s.isPullRequestExist()
+	pullRequestExists, pullRequestDetails, err := s.isPullRequestExist()
 	if err != nil {
 		return err
 	}
 
-	if pullrequestLink != "" {
+	if pullRequestExists {
 		logrus.Debugf("Stash pull request detected")
 
-		report.Title = pullrequestTitle
-		report.Link = pullrequestLink
-		report.Description = pullrequestDescription
+		report.Title = pullRequestDetails.Title
+		report.Description = pullRequestDetails.Description
+		report.Link = pullRequestDetails.Link
 		return nil
 	}
 
